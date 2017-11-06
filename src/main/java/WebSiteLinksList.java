@@ -83,7 +83,6 @@ public class WebSiteLinksList  {
         return false;
     }
 
-
     class Inspector implements Runnable {
         private List<String> links;
         private final String mainUrl;
@@ -94,11 +93,8 @@ public class WebSiteLinksList  {
         }
 
         private boolean isSource(String link) {
-            if (link.endsWith(".js") || link.endsWith(".rss") || link.endsWith(".jpg")
-                    || link.endsWith(".png") || link.endsWith(".css") || link.endsWith(".xml")) {
-                return true;
-            }
-            return false;
+            return link.endsWith(".js") || link.endsWith(".rss") || link.endsWith(".jpg")
+                    || link.endsWith(".png") || link.endsWith(".css") || link.endsWith(".xml");
         }
 
         @Override
