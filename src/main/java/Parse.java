@@ -17,22 +17,19 @@ public class Parse {
     }
 
     private boolean isContainingLink(String url) {
-        return url.contains("href=") || url.contains("src=");
+        return url.contains("href=\"") || url.contains("src=\"");
     }
 
     private String extractLink(String line) {
         if (!line.contains("\"")) {
             return "";
         }
-        String match = "href=";
-        if (!line.contains(match)) {
-            match = "src=";
-        }
-        String result = line.substring(line.indexOf(match) + match.length()).split("\"")[1];
-        if (!result.startsWith("http")) {
+        String match = line.contains("href=") ? "href=" : "src=";
+        String[] tokens = line.substring(line.indexOf(match) + match.length()).split("\"");
+        if (tokens.length < 2 || !tokens[1].startsWith("http")) {
             return "";
         }
-        return result;
+        return tokens[1];
     }
 
 }
