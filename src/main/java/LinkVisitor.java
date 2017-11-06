@@ -1,24 +1,20 @@
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
 
 public class LinkVisitor implements ThreadWaiting {
     private ConcurrentHashMap<String, String> broken;
     private ConcurrentSkipListSet<String> visited;
+    private ConcurrentSkipListSet<String> checked;
     private final String mainDomain;
-    private ConcurrentLinkedQueue<Thread> threads;
-    private long checked = 0;
-
 
     public LinkVisitor(String mainDomain) {
         this.mainDomain = mainDomain;
         visited = new ConcurrentSkipListSet<>();
+        checked = new ConcurrentSkipListSet<>();
         broken = new ConcurrentHashMap<>();
-        threads = new ConcurrentLinkedQueue<>();
     }
 
     public void start() {
@@ -26,7 +22,7 @@ public class LinkVisitor implements ThreadWaiting {
         long startTime = System.currentTimeMillis();
         startThread(new Visitor(mainDomain));
         while (!isAllThreadsStopped()) ;
-        System.out.println("Checked links: " + checked);
+        System.out.println("Checked links: " + checked.size());
         System.out.println("Broken links: " + broken.size());
         System.out.println("Total time: " + (System.currentTimeMillis() - startTime) / 1000);
         if (broken.size() > 0) {
@@ -39,20 +35,12 @@ public class LinkVisitor implements ThreadWaiting {
     private void startThread(Runnable runnable) {
         Thread thread = new Thread(runnable);
         thread.setDaemon(true);
-        threads.add(thread);
         thread.start();
     }
 
     @Override
     public boolean isAllThreadsStopped() {
-        Iterator <Thread> iterator = threads.iterator();
-        while (iterator.hasNext()) {
-            Thread thread = iterator.next();
-            if (!thread.isAlive()) {
-                iterator.remove();
-            }
-        }
-        return threads.isEmpty();
+        return Thread.activeCount() < 3;
     }
 
 
@@ -66,7 +54,7 @@ public class LinkVisitor implements ThreadWaiting {
         }
 
         private boolean isSource(String link) {
-            if (link.endsWith(".js") || link.endsWith(".rss") || link.endsWith(".jpg") || link.endsWith(".png")) {
+            if (link.endsWith(".js") || link.endsWith(".rss") || link.endsWith(".jpg") || link.endsWith(".png") || link.endsWith(".css")) {
                 return true;
             }
             return false;
@@ -75,12 +63,14 @@ public class LinkVisitor implements ThreadWaiting {
         @Override
         public void run() {
             for (String link : links) {
-                checked++;
-                if (!new Request(link).isSuccess()) {
-                    broken.putIfAbsent(link, mainURl);
-                } else {
-                    if (link.startsWith(mainURl) && !visited.contains(link) && !isSource(link)) {
-                        startThread(new Visitor(link));
+                if (!checked.contains(link)) {
+                    checked.add(link);
+                    if (!new Request(link).isSuccess()) {
+                        broken.putIfAbsent(link, mainURl);
+                    } else {
+                        if (link.startsWith(mainURl) && !visited.contains(link) && !isSource(link)) {
+                            startThread(new Visitor(link));
+                        }
                     }
                 }
             }
@@ -96,7 +86,6 @@ public class LinkVisitor implements ThreadWaiting {
 
         @Override
         public void run() {
-            System.out.println("Visit " + mainUrl);
             visited.add(mainUrl);
             List<String> links = new Parse(new Request(mainUrl).pageSource()).links();
             List<String> domain = links.stream().filter((n) -> n.startsWith(mainUrl)).collect(Collectors.toList());
