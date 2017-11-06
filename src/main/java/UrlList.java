@@ -1,10 +1,10 @@
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Parse {
+public class UrlList {
     private List<String> lines;
 
-    public Parse(List<String> lines) {
+    public UrlList(List<String> lines) {
         this.lines = lines;
     }
 

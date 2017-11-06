@@ -6,31 +6,36 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 
-public class Request {
+public class WebPage implements InternetPage {
     private final String link;
     private final int success = 200;
 
-    public Request(String link) {
+    public WebPage(String link) {
         this.link = link;
     }
 
-    public boolean isSuccess() {
+    @Override
+    public int responseCode() {
         Optional<HttpURLConnection> optional = connection();
         if (!optional.isPresent()) {
-            return false;
+            return 0;
         }
         try {
             HttpURLConnection connection = optional.get();
-            boolean result = connection.getResponseCode() == success;
+            int result = connection.getResponseCode();
             connection.disconnect();
             return result;
         } catch (IOException e) {
             printException(e);
-            return false;
+            return 0;
         }
     }
 
-    public List<String> pageSource() {
+    public boolean available() {
+        return responseCode() == success;
+    }
+
+    public List<String> content() {
         Optional<HttpURLConnection> optional = connection();
         LinkedList<String> linkedList = new LinkedList<>();
         if (optional.isPresent()) {

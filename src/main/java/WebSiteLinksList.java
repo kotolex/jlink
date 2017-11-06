@@ -1,3 +1,4 @@
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -5,14 +6,14 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
 
-public class LinkVisitor implements ThreadWaiting {
+public class WebSiteLinksList  {
     private ConcurrentHashMap<String, String> broken;
     private ConcurrentSkipListSet<String> visited;
     private ConcurrentSkipListSet<String> checked;
     private ConcurrentLinkedQueue<Thread> threads;
     private final String mainDomain;
 
-    public LinkVisitor(String mainDomain) {
+    public WebSiteLinksList(String mainDomain) {
         this.mainDomain = mainDomain;
         visited = new ConcurrentSkipListSet<>();
         checked = new ConcurrentSkipListSet<>();
@@ -20,7 +21,8 @@ public class LinkVisitor implements ThreadWaiting {
         threads = new ConcurrentLinkedQueue<>();
     }
 
-    public void start() {
+    public void checkLinks() {
+        clearAll();
         System.out.println("Starting...");
         long startTime = System.currentTimeMillis();
         startThread(new Visitor(mainDomain));
@@ -29,11 +31,37 @@ public class LinkVisitor implements ThreadWaiting {
         System.out.println("Broken links: " + broken.size());
         System.out.println("Visited links: " + visited.size());
         System.out.println("Total time: " + (System.currentTimeMillis() - startTime) / 1000);
+    }
+
+    private void clearAll() {
+        visited.clear();
+        checked.clear();
+        broken.clear();
+        threads.clear();
+    }
+
+    public int brokenLinksCount() {
+        if (visited.size() < 1) {
+            checkLinks();
+        }
+        return broken.size();
+    }
+
+    public int checkedLinksCount() {
+        if (visited.size() < 1) {
+            checkLinks();
+        }
+        return checked.size();
+    }
+
+    public List<String> brokenLinks() {
+        List<String> values = new LinkedList<>();
         if (broken.size() > 0) {
             for (Map.Entry pair : broken.entrySet()) {
-                System.out.println(pair.getKey() + " - " + pair.getValue());
+                values.add(pair.getKey() + " - " + pair.getValue());
             }
         }
+        return values;
     }
 
     private void startThread(Runnable runnable) {
@@ -43,8 +71,7 @@ public class LinkVisitor implements ThreadWaiting {
         thread.start();
     }
 
-    @Override
-    public boolean isAllThreadsStopped() {
+    private boolean isAllThreadsStopped() {
         if (Thread.activeCount() < 3) {
             for (Thread thread : threads) {
                 if (thread.isAlive()) {
@@ -79,7 +106,7 @@ public class LinkVisitor implements ThreadWaiting {
             for (String link : links) {
                 if (!checked.contains(link)) {
                     checked.add(link);
-                    if (!new Request(link).isSuccess()) {
+                    if (!new RedirectWebPage(new WebPage(link)).available()) {
                         broken.putIfAbsent(link, mainUrl);
                     } else {
                         if (needToVisit(link)) {
@@ -105,7 +132,7 @@ public class LinkVisitor implements ThreadWaiting {
         @Override
         public void run() {
             visited.add(mainUrl);
-            List<String> links = new Parse(new Request(mainUrl).pageSource()).links();
+            List<String> links = new UrlList(new WebPage(mainUrl).content()).links();
             List<String> domain = links.stream().filter((n) -> n.startsWith(mainUrl)).collect(Collectors.toList());
             List<String> others = links.stream().filter((n) -> !n.startsWith(mainUrl)).collect(Collectors.toList());
             startThread(new Inspector(domain, mainUrl));
