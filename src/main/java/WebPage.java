@@ -45,6 +45,7 @@ public class WebPage implements InternetPage {
                 while (scanner.hasNext()) {
                     linkedList.add(scanner.next());
                 }
+                scanner.close();
                 connection.disconnect();
             } catch (Exception e) {
                 printException(e);
@@ -66,7 +67,7 @@ public class WebPage implements InternetPage {
     }
 
     private void printException(Exception ex) {
-        System.err.println(link + " raise exception " + ex.getMessage());
+        new SimpleConsole().println(link + " raise exception " + ex.getMessage());
     }
 
 }

@@ -11,7 +11,7 @@ public class UrlList {
     public List<String> links() {
         List<String> filtered = lines.stream().filter(this::isContainingLink).collect(Collectors.toList());
         if (!filtered.isEmpty()) {
-            filtered = filtered.stream().map(this::extractLink).filter((n) -> !n.isEmpty()).collect(Collectors.toList());
+            filtered = filtered.parallelStream().map(this::extractLink).filter((n) -> !n.isEmpty()).distinct().collect(Collectors.toList());
         }
         return filtered;
     }
