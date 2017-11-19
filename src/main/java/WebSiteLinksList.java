@@ -1,42 +1,36 @@
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
 
 public final class WebSiteLinksList {
-    private ConcurrentHashMap<String, String> broken;
-    private HashSet<String> visited;
-    private HashSet<String> checked;
-    private ConcurrentLinkedQueue<Thread> threads;
+    private final ConcurrentHashMap<String, String> broken;
+    private final ConcurrentSkipListSet<String> visited;
+    private final ConcurrentSkipListSet<String> checked;
+    private final ConcurrentLinkedQueue<Thread> threads;
     private final String mainDomain;
 
     public WebSiteLinksList(String mainDomain) {
         this.mainDomain = mainDomain;
-        visited = new HashSet<>();
-        checked = new HashSet<>();
+        visited = new ConcurrentSkipListSet<>();
+        checked = new ConcurrentSkipListSet<>();
         broken = new ConcurrentHashMap<>();
         threads = new ConcurrentLinkedQueue<>();
     }
 
     public void checkLinks() {
-        clearAll();
+        clearAllCollections();
         SimpleConsole console = new SimpleConsole();
         console.println("Starting...");
         console.startCount();
         startThread(new Visitor(mainDomain));
         while (!isAllThreadsStopped()) ;
-        console.println("Checked links: " + checked.size());
-        console.println("Broken links: " + broken.size());
-        console.println("Visited links: " + visited.size());
+        console.println("Checked links: " + checkedLinksCount());
+        console.println("Broken links: " + brokenLinksCount());
+        console.println("Visited links: " + visitedLinksCount());
         console.printTime();
-    }
-
-    private void clearAll() {
-        visited.clear();
-        checked.clear();
-        broken.clear();
-        threads.clear();
     }
 
     public int brokenLinksCount() {
@@ -44,7 +38,11 @@ public final class WebSiteLinksList {
     }
 
     public int checkedLinksCount() {
-        return checked.size();
+        return checkedLinks().size();
+    }
+
+    public int visitedLinksCount() {
+        return visitedLinks().size();
     }
 
     public List<String> brokenLinksWithPath() {
@@ -52,11 +50,18 @@ public final class WebSiteLinksList {
     }
 
     public List<String> checkedLinks() {
-        return checked.stream().collect(Collectors.toList());
+        return new ArrayList<>(checked);
     }
 
     public List<String> visitedLinks() {
-        return visited.stream().collect(Collectors.toList());
+        return new ArrayList<>(visited);
+    }
+
+    private void clearAllCollections() {
+        visited.clear();
+        checked.clear();
+        broken.clear();
+        threads.clear();
     }
 
     private void startThread(Runnable runnable) {
@@ -67,35 +72,11 @@ public final class WebSiteLinksList {
     }
 
     private boolean isAllThreadsStopped() {
-        return threads.stream().filter((n) -> n.isAlive()).count() < 1;
-    }
-
-    public void addToChecked(String link) {
-        synchronized (checked) {
-            checked.add(link);
-        }
-    }
-
-    public void addToVisited(String link) {
-        synchronized (visited) {
-            visited.add(link);
-        }
-    }
-
-    public boolean brokenContains(String link) {
-        return broken.entrySet().parallelStream().filter((n) -> n.getKey().equals(link)).count() > 0;
-    }
-
-    public boolean isCheckedContains(String url) {
-        boolean isContains;
-        synchronized (checked) {
-            isContains = checked.contains(url);
-        }
-        return isContains;
+        return threads.stream().filter(Thread::isAlive).count() < 1;
     }
 
     final class Inspector implements Runnable {
-        private List<String> links;
+        private final List<String> links;
         private final String mainUrl;
 
         public Inspector(List<String> links, String mainUrl) {
@@ -111,8 +92,8 @@ public final class WebSiteLinksList {
         @Override
         public void run() {
             for (String link : links) {
-                addToChecked(link);
-                if (!brokenContains(link)) {
+                checked.add(link);
+                if (!broken.containsKey(link)) {
                     if (!checkLinkIsAvailable(link)) {
                         broken.putIfAbsent(link, mainUrl);
                     } else {
@@ -146,9 +127,9 @@ public final class WebSiteLinksList {
 
         @Override
         public void run() {
-            addToVisited(mainUrl);
+            visited.add(mainUrl);
             List<String> links = new UrlList(new WebPage(mainUrl).content()).links().parallelStream().
-                    filter((n) -> !isCheckedContains(n)).
+                    filter((n) -> !checked.contains(n)).
                     collect(Collectors.toList());
             startThread(new Inspector(links.parallelStream().filter((n) -> n.startsWith(mainUrl)).collect(Collectors.toList()), mainUrl));
             startThread(new Inspector(links.parallelStream().filter((n) -> !n.startsWith(mainUrl)).collect(Collectors.toList()), mainUrl));

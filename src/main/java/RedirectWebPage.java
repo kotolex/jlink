@@ -15,7 +15,11 @@ public class RedirectWebPage implements InternetPage {
     @Override
     public boolean available() {
         int code = responseCode();
-        return code == 200 || code == 301;
+        return code == 200 || isInRedirectionCodesRange(code);
+    }
+
+    private boolean isInRedirectionCodesRange(int code) {
+        return code >= 300 && code <= 307;
     }
 
     @Override
