@@ -6,7 +6,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 
-public class WebPage implements InternetPage {
+/**
+ * Класс для работы с веб-страницой, возвращает содержимое страницы и/или код состояния.
+ * Рабочей (available) ссылкой считается только та, что возвращает код 200
+ *
+ * @author kotolex
+ * @version 1.0
+ */
+public final class WebPage implements InternetPage {
     private final String link;
     private final int success = 200;
 
@@ -14,6 +21,9 @@ public class WebPage implements InternetPage {
         this.link = link;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int responseCode() {
         Optional<HttpURLConnection> optional = connection();
@@ -31,10 +41,18 @@ public class WebPage implements InternetPage {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public boolean available() {
         return responseCode() == success;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public List<String> content() {
         Optional<HttpURLConnection> optional = connection();
         LinkedList<String> linkedList = new LinkedList<>();
@@ -54,6 +72,10 @@ public class WebPage implements InternetPage {
         return linkedList;
     }
 
+    /**
+     * Метод для получения соединения с веб-страницей
+     * @return Optional, чтобы избежать возвращения null при ошибках доступа к страницам
+     */
     private Optional<HttpURLConnection> connection() {
         try {
             HttpURLConnection connection = (HttpURLConnection) new URL(link).openConnection();
@@ -66,6 +88,11 @@ public class WebPage implements InternetPage {
         }
     }
 
+    /**
+     * Печатает исключение в консоль в общем виде
+     * @param ex - исключение
+     * @see SimpleConsole
+     */
     private void printException(Exception ex) {
         new SimpleConsole().println(link + " raise exception " + ex.getMessage());
     }
