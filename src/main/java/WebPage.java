@@ -11,12 +11,25 @@ import java.util.Scanner;
  * Рабочей (available) ссылкой считается только та, что возвращает код 200
  *
  * @author kotolex
- * @version 1.0
+ * @version 1.1
  */
 public final class WebPage implements InternetPage {
     private final String link;
+    /**
+     * Код состояния доступности страницы
+     */
     private final int success = 200;
 
+    /**
+     * Необходимо для более корретной проверки ссылок, иначе возвращает не 200 в некоторых случаях
+     */
+    private final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36";
+
+    /**
+     * Конструктор
+     *
+     * @param link - страница, на которой ищутся ссылки
+     */
     public WebPage(String link) {
         this.link = link;
     }
@@ -80,6 +93,7 @@ public final class WebPage implements InternetPage {
         try {
             HttpURLConnection connection = (HttpURLConnection) new URL(link).openConnection();
             connection.setRequestMethod("GET");
+            connection.setRequestProperty("user-agent", USER_AGENT);
             connection.connect();
             return Optional.of(connection);
         } catch (Exception e) {

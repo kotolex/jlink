@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
  * @author kotolex
  * @version 1.01
  */
-public class UrlList {
+public class UrlList implements UrlLinksList {
     /** Лист с содержимым веб-страницы (верстка) */
     private List<String> lines;
 
@@ -17,10 +17,9 @@ public class UrlList {
     }
 
     /**
-     * Возвращает лист извлеченных из верстки ссылок, в случае проблем возвращает пустой список.
-     * Лист не содержит одинаковых ссылок
-     * @return лист уникальных (не повторяющихся) ссылок
+     * {@inheritDoc}
      */
+    @Override
     public List<String> links() {
         List<String> filtered = lines.stream().filter(this::isContainingLink).collect(Collectors.toList());
         if (!filtered.isEmpty()) {

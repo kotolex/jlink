@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
  * но не будет перехода на www.blog.example.com
  *
  * @author kotolex
- * @version 1.02
+ * @version 1.04
  */
 public final class WebSiteLinksList {
     /**
@@ -37,12 +37,33 @@ public final class WebSiteLinksList {
      */
     private final String mainDomain;
 
-    public WebSiteLinksList(String mainDomain) {
+    /**
+     * Флаг использовать ли простой способ проверки, в случае false  проверяет с помощью UrlListWithSelenium
+     * @see UrlListWithSelenium
+     */
+    private boolean isSimpleType = true;
+
+    private WebSiteLinksList(String mainDomain) {
         this.mainDomain = mainDomain;
         visited = new HashSet<>();
         checked = new HashSet<>();
         broken = new ConcurrentHashMap<>();
         threads = new ConcurrentLinkedQueue<>();
+    }
+
+    /**
+     * Публичный коструктор
+     *
+     * @param mainDomain - главная страница домена для проверки
+     * @param simpleType - проверять простым способом или с помощью Селениум. true - проверка
+     *                   простым способом -проверяются и парсятся только явные ссылки. false -  проверка
+     *                   с помощью UrlListWithSelenium, проверяются и относительные ссылки.
+     *                   Второй способ дольше, но точнее.
+     *@see UrlListWithSelenium
+     */
+    public WebSiteLinksList(String mainDomain, boolean simpleType) {
+        this(mainDomain);
+        isSimpleType = simpleType;
     }
 
     /**
@@ -53,7 +74,7 @@ public final class WebSiteLinksList {
         SimpleConsole console = new SimpleConsole();
         console.println("Starting...");
         console.startCount();
-        startThread(new Visitor(mainDomain));
+        startThread(new Visitor(mainDomain, isSimpleType));
         while (!isAllThreadsStopped()) ;
         console.println("Checked links: " + checked.size());
         console.println("Broken links: " + brokenLinksCount());
@@ -180,7 +201,7 @@ public final class WebSiteLinksList {
          */
         private void visitNewUrl(String url) {
             if (needToVisit(url)) {
-                startThread(new Visitor(url));
+                startThread(new Visitor(url, isSimpleType));
             }
         }
 
@@ -214,9 +235,17 @@ public final class WebSiteLinksList {
      */
     final class Visitor implements Runnable {
         private final String mainUrl;
+        private final boolean isSimpleType;
 
-        public Visitor(String mainUrl) {
+        /**
+         * Консруктор потока
+         * @param mainUrl - страница проверки
+         * @param isSimpleType - проверять простым способом или с помощью UrlListWithSelenium
+         * @see UrlListWithSelenium
+         */
+        public Visitor(String mainUrl, boolean isSimpleType) {
             this.mainUrl = mainUrl;
+            this.isSimpleType = isSimpleType;
         }
 
         /**
@@ -245,11 +274,20 @@ public final class WebSiteLinksList {
         @Override
         public void run() {
             addToVisited(mainUrl);
-            List<String> links = new UrlList(new WebPage(mainUrl).content()).links().parallelStream().
-                    filter((n) -> !isCheckedContains(n)).
-                    collect(Collectors.toList());
+            List<String> links = getAllUncheckedLinks();
             startThread(new Inspector(links.parallelStream().filter((n) -> n.startsWith(mainUrl)).collect(Collectors.toList()), mainUrl));
             startThread(new Inspector(links.parallelStream().filter((n) -> !n.startsWith(mainUrl)).collect(Collectors.toList()), mainUrl));
         }
+
+        /**
+         * В зависимости от флага isSimpleType получает ссылки простым способом или с помощью UrlListWithSelenium
+         *
+         * @return список еще не провереных ссылок
+         */
+        private List<String> getAllUncheckedLinks() {
+            UrlLinksList urlList = isSimpleType ? new UrlList(new WebPage(mainUrl).content()) : new UrlListWithSelenium(mainUrl);
+            return urlList.links().parallelStream().filter((n) -> !isCheckedContains(n)).collect(Collectors.toList());
+        }
+
     }
 }
