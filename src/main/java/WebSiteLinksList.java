@@ -3,6 +3,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -42,6 +43,8 @@ public final class WebSiteLinksList {
      * @see UrlListWithSelenium
      */
     private boolean isSimpleType = true;
+    private final AtomicInteger threadCount = new AtomicInteger(0);
+    private int maxThreads = 0;
 
     private WebSiteLinksList(String mainDomain) {
         this.mainDomain = mainDomain;
@@ -76,10 +79,11 @@ public final class WebSiteLinksList {
         console.startCount();
         startThread(new Visitor(mainDomain, isSimpleType));
         while (!isAllThreadsStopped()) ;
-        console.println("Checked links: " + checked.size());
-        console.println("Broken links: " + brokenLinksCount());
-        console.println("Visited links: " + visited.size());
         console.printTime();
+        console.println("Checked links: " + checked.size());
+        console.println("Visited links: " + visited.size());
+        console.println("Broken links: " + brokenLinksCount());
+        console.println("Maximum using threads: " + maxThreads);
     }
 
     public int brokenLinksCount() {
@@ -103,6 +107,10 @@ public final class WebSiteLinksList {
         return new ArrayList<>(visited);
     }
 
+    public int getMaxThreads() {
+        return maxThreads;
+    }
+
     /**
      * Очищает все коллекции для начала работы
      */
@@ -123,6 +131,10 @@ public final class WebSiteLinksList {
         thread.setDaemon(true);
         threads.add(thread);
         thread.start();
+        threadCount.getAndIncrement();
+        if (threadCount.get()>maxThreads) {
+            maxThreads = threadCount.get();
+        }
     }
 
     /**
@@ -169,6 +181,7 @@ public final class WebSiteLinksList {
                     }
                 }
             }
+            threadCount.getAndDecrement();
         }
 
         /**
@@ -277,6 +290,7 @@ public final class WebSiteLinksList {
             List<String> links = getAllUncheckedLinks();
             startThread(new Inspector(links.parallelStream().filter((n) -> n.startsWith(mainUrl)).collect(Collectors.toList()), mainUrl));
             startThread(new Inspector(links.parallelStream().filter((n) -> !n.startsWith(mainUrl)).collect(Collectors.toList()), mainUrl));
+            threadCount.getAndDecrement();
         }
 
         /**
