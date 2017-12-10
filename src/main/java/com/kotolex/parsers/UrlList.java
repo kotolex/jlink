@@ -1,3 +1,7 @@
+package com.kotolex.parsers;
+
+import com.kotolex.interfaces.UrlLinksList;
+
 import java.util.List;
 import java.util.stream.Collectors;
 

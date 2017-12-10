@@ -1,3 +1,7 @@
+package com.kotolex.pages;
+
+import com.kotolex.interfaces.InternetPage;
+
 import java.util.List;
 
 /**

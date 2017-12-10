@@ -1,3 +1,8 @@
+package com.kotolex.pages;
+
+import com.kotolex.interfaces.InternetPage;
+import com.kotolex.services.SimpleConsole;
+
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;

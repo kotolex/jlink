@@ -1,3 +1,6 @@
+package com.kotolex.parsers;
+
+import com.kotolex.interfaces.UrlLinksList;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.htmlunit.HtmlUnitDriver;
@@ -10,7 +13,7 @@ import java.util.stream.Collectors;
 /**
  * Класс получения ссылок методами Selenium WebDriver, собирает даже относительные ссылки.
  * Сбор ссылок происходит только один раз, при дальнейших запросах возвращается уже сформированный список! Сразу после
- * сбора ссылок экземпляр драйвера уничтожается. *
+ * сбора ссылок экземпляр драйвера уничтожается.
  *
  * @author kotolex
  * @version 1.1
@@ -29,7 +32,6 @@ public final class UrlListWithSelenium implements UrlLinksList {
         this.webPageUrl = webPageUrl;
         driver = new HtmlUnitDriver(false);
     }
-
 
     /**
      * {@inheritDoc}
@@ -72,7 +74,7 @@ public final class UrlListWithSelenium implements UrlLinksList {
         return driver.findElements(By.tagName(tag)).parallelStream()
                 .filter((n) -> n.getAttribute(attribute) != null)
                 .map((n) -> n.getAttribute(attribute))
-                .filter((n) -> !n.startsWith("mailto"))
+                .filter((n) -> !n.startsWith("mailto") && !n.startsWith("javascript"))
                 .distinct()
                 .collect(Collectors.toList());
     }

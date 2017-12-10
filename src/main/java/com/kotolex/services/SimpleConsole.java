@@ -1,3 +1,5 @@
+package com.kotolex.services;
+
 import java.io.PrintStream;
 
 /**
@@ -9,7 +11,7 @@ import java.io.PrintStream;
 public class SimpleConsole {
     /** Стрим для работы со стандартным выводом*/
     private PrintStream writer;
-    /** Хранит время начала отсчета, для определения времени, затраченного на определенные дейтсвия */
+    /** Хранит время начала отсчета, для определения времени, затраченного на определенные действия */
     private long startTime;
 
     public SimpleConsole() {

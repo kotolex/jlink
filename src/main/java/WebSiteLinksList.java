@@ -1,3 +1,10 @@
+import com.kotolex.interfaces.UrlLinksList;
+import com.kotolex.pages.RedirectWebPage;
+import com.kotolex.pages.WebPage;
+import com.kotolex.parsers.UrlList;
+import com.kotolex.parsers.UrlListWithSelenium;
+import com.kotolex.services.SimpleConsole;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -39,7 +46,8 @@ public final class WebSiteLinksList {
     private final String mainDomain;
 
     /**
-     * Флаг использовать ли простой способ проверки, в случае false  проверяет с помощью UrlListWithSelenium
+     * Флаг использовать ли простой способ проверки, в случае false  проверяет с помощью com.kotolex.parsers.UrlListWithSelenium
+     *
      * @see UrlListWithSelenium
      */
     private boolean isSimpleType = true;
@@ -62,7 +70,7 @@ public final class WebSiteLinksList {
      *                   простым способом -проверяются и парсятся только явные ссылки. false -  проверка
      *                   с помощью UrlListWithSelenium, проверяются и относительные ссылки.
      *                   Второй способ дольше, но точнее.
-     *@see UrlListWithSelenium
+     * @see UrlListWithSelenium
      */
     public WebSiteLinksList(String mainDomain, boolean simpleType) {
         this(mainDomain);
@@ -83,7 +91,7 @@ public final class WebSiteLinksList {
         console.println("Checked links: " + checked.size());
         console.println("Visited links: " + visited.size());
         console.println("Broken links: " + brokenLinksCount());
-        console.println("Maximum using threads: " + maxThreads);
+        console.println("Maximum using threads: " + getMaxThreads());
     }
 
     public int brokenLinksCount() {
@@ -132,7 +140,7 @@ public final class WebSiteLinksList {
         threads.add(thread);
         thread.start();
         threadCount.getAndIncrement();
-        if (threadCount.get()>maxThreads) {
+        if (threadCount.get() > maxThreads) {
             maxThreads = threadCount.get();
         }
     }
@@ -252,7 +260,8 @@ public final class WebSiteLinksList {
 
         /**
          * Консруктор потока
-         * @param mainUrl - страница проверки
+         *
+         * @param mainUrl      - страница проверки
          * @param isSimpleType - проверять простым способом или с помощью UrlListWithSelenium
          * @see UrlListWithSelenium
          */
@@ -288,8 +297,9 @@ public final class WebSiteLinksList {
         public void run() {
             addToVisited(mainUrl);
             List<String> links = getAllUncheckedLinks();
-            startThread(new Inspector(links.parallelStream().filter((n) -> n.startsWith(mainUrl)).collect(Collectors.toList()), mainUrl));
-            startThread(new Inspector(links.parallelStream().filter((n) -> !n.startsWith(mainUrl)).collect(Collectors.toList()), mainUrl));
+            if (links.size()>0) {
+                startThread(new Inspector(getAllUncheckedLinks(), mainUrl));
+            }
             threadCount.getAndDecrement();
         }
 

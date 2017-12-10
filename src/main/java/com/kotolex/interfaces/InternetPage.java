@@ -1,3 +1,5 @@
+package com.kotolex.interfaces;
+
 import java.util.List;
 
 /**

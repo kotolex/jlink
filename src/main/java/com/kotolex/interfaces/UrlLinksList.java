@@ -1,4 +1,7 @@
-import com.sun.istack.internal.NotNull;
+package com.kotolex.interfaces;
+
+import com.kotolex.parsers.UrlList;
+import com.kotolex.parsers.UrlListWithSelenium;
 
 import java.util.List;
 
@@ -17,6 +20,5 @@ public interface UrlLinksList {
      * Лист не содержит одинаковых ссылок
      * @return лист уникальных (не повторяющихся) ссылок
      */
-    @NotNull
     List<String> links();
 }
